@@ -8,31 +8,46 @@
 // Standard Headers
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
+#include <string>
 
-const GLchar* vertexSource = R"glsl(
-    #version 150 core
-    in vec2 position;
-    void main()
-    {
-        gl_Position = vec4(position, 0.0, 1.0);
+// GLOBAL VARIABlES
+const std::string vertexShaderPath = "./Build/MyFirstEngine/shader.vert";
+const std::string fragShaderPath = "./Build/MyFirstEngine/shader.frag";
+
+float vertices[] = {
+        0.0f, 0.5f,
+        0.5f, -0.5f,
+        -0.5f, -0.5f
+};
+//GLOBAL VARIABLES
+
+const char* LoadShaderAsString(const std::string &filename) {
+    std::string result;
+    std::string line;
+
+    std::ifstream file(filename);
+
+    if(file.is_open()) {
+        while (std::getline(file, line)) {
+            result += line + "\n";
+        }
+        file.close();
+    } else {
+        printf("Failed to open file: %s\n", filename.c_str());
     }
-)glsl";
+    char* cstr = new char[result.length() + 1];
+    strcpy(cstr, result.c_str());
+    return cstr;
+}
 
-const GLchar* fragSource = R"glsl(
-    #version 150 core
 
-    out vec4 outColor;
-
-    void main(){
-        outColor = vec4(1.0, 1.0, 1.0, 1.0);
-    }
-)glsl";
-
-GLuint loadShaders() {
+GLuint InitializeShaders() {
+    const char* vertexSource = LoadShaderAsString(vertexShaderPath);
+    const char* fragSource = LoadShaderAsString(fragShaderPath);
     //Create and Load a Vertex Shader
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexSource, NULL);
-    //Compile
     glCompileShader(vertexShader);
 
     //Create and Load Frag Shader
@@ -48,6 +63,8 @@ GLuint loadShaders() {
     glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
     if (vertexStatus && fragStatus) {
         printf("Shaders compiled successfully!");
+    } else {
+        printf("Shader compilation failed!");
     }
 
     //Create shader program
@@ -96,19 +113,12 @@ int main(int argc, char * argv[]) {
     //Creates a Vertex Buffer Object (VBO)
     GLuint vbo;
     glGenBuffers(1, &vbo);
-
-    float vertices[] = {
-        0.0f, 0.5f,
-        0.5f, -0.5f,
-        -0.5f, -0.5f
-    };
-
     //Activates the VBO
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     //Copy Vertex Data
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    GLuint shaderProgram = loadShaders();
+    GLuint shaderProgram = InitializeShaders();
 
     //Get reference to postion from vertex shader
     GLint posAttribute = glGetAttribLocation(shaderProgram, "position");
