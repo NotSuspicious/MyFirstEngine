@@ -16,9 +16,9 @@ const std::string vertexShaderPath = "./Build/MyFirstEngine/shader.vert";
 const std::string fragShaderPath = "./Build/MyFirstEngine/shader.frag";
 
 float vertices[] = {
-        0.0f, 0.5f,
-        0.5f, -0.5f,
-        -0.5f, -0.5f
+        0.0f, 0.5f, 1.0f, 0.0f, 0.0f,
+        0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f
 };
 //GLOBAL VARIABLES
 
@@ -81,7 +81,7 @@ GLuint InitializeShaders() {
     return shaderProgram;
 }
 
-int main(int argc, char * argv[]) {
+GLFWwindow* CreateWindow(const char* title, int width, int height) {
     // Load GLFW and Create a Window
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -89,20 +89,34 @@ int main(int argc, char * argv[]) {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    auto mWindow = glfwCreateWindow(mWidth, mHeight, "OpenGL", nullptr, nullptr);
+    auto mWindow = glfwCreateWindow(width, height, title, nullptr, nullptr);
 
     // Check for Valid Context
     if (mWindow == nullptr) {
         fprintf(stderr, "Failed to Create OpenGL Context");
-        return EXIT_FAILURE;
+        return NULL;
     }
 
+    return mWindow;
+}
+
+void CreateOpenGLContext(GLFWwindow* mWindow) {
     // Create Context and Load OpenGL Functions
     glfwMakeContextCurrent(mWindow);
     gladLoadGL();
     fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
+}
+
+int main(int argc, char * argv[]) {
+
+    GLFWwindow* m_Window = CreateWindow("OpenGL", mWidth, mHeight);
+    CreateOpenGLContext(m_Window);
 
 
+    // Create Context and Load OpenGL Functions
+    glfwMakeContextCurrent(m_Window);
+    gladLoadGL();
+    fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 
     //Vertex Array Object VAO: Stores attributes and VBO links
     GLuint vao;
@@ -122,16 +136,22 @@ int main(int argc, char * argv[]) {
 
     //Get reference to postion from vertex shader
     GLint posAttribute = glGetAttribLocation(shaderProgram, "position");
+    GLint colAttribute = glGetAttribLocation(shaderProgram, "color");
     //Enable the attribute
     glEnableVertexAttribArray(posAttribute);
+    glEnableVertexAttribArray(colAttribute);
     //Specify how data is retrieved from VBO
-    glVertexAttribPointer(posAttribute, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glVertexAttribPointer(posAttribute, 2, GL_FLOAT, GL_FALSE,
+        sizeof(float)*5, 0);
+    glVertexAttribPointer(colAttribute, 3, GL_FLOAT, GL_FALSE,
+        sizeof(float)*5, (void*)(sizeof(float)*2));
+
     
 
     // Rendering Loop
-    while (glfwWindowShouldClose(mWindow) == false) {
-        if (glfwGetKey(mWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(mWindow, true);
+    while (glfwWindowShouldClose(m_Window) == false) {
+        if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            glfwSetWindowShouldClose(m_Window, true);
 
 
 
@@ -144,7 +164,7 @@ int main(int argc, char * argv[]) {
 
 
         // Flip Buffers and Draw
-        glfwSwapBuffers(mWindow);
+        glfwSwapBuffers(m_Window);
         glfwPollEvents();
     }
     glfwTerminate();
