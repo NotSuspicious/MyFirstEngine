@@ -5,6 +5,7 @@
     "version": "0.2.0",
     "MIDebuggerPath": "/usr/bin/lldb",
     "configurations": [
+
         {
             "name": "Launch (lldb)",
             "type": "cppdbg",
@@ -12,7 +13,7 @@
             "program": "${workspaceFolder}/Build/MyFirstEngine/MyFirstEngine",
             "args": [],
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/Build/MyFirstEngine/",
             "environment": [
                 {
                     "name": "CG_PDF_VERBOSE",

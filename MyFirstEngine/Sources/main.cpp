@@ -1,9 +1,16 @@
-// Local Headers
-#include "glitter.hpp"
-
 // System Headers
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <assimp/Importer.hpp>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
+#include <btBulletDynamicsCommon.h>
+#include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION 
+#include <stb_image.h>
 
 // Standard Headers
 #include <cstdio>
@@ -12,14 +19,17 @@
 #include <string>
 
 // GLOBAL VARIABlES
-const std::string vertexShaderPath = "./Build/MyFirstEngine/shader.vert";
-const std::string fragShaderPath = "./Build/MyFirstEngine/shader.frag";
+const std::string vertexShaderPath = "./shader.vert";
+const std::string fragShaderPath = "./shader.frag";
 
 float vertices[] = {
         0.0f, 0.5f, 1.0f, 0.0f, 0.0f,
         0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
         -0.5f, -0.5f, 0.0f, 0.0f, 1.0f
 };
+
+const int mWidth = 1200;
+const int mHeight = 800;
 //GLOBAL VARIABLES
 
 const char* LoadShaderAsString(const std::string &filename) {
@@ -107,22 +117,61 @@ void CreateOpenGLContext(GLFWwindow* mWindow) {
     fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
 }
 
+void GenerateTextures() {
+    //     GLuint elements[] = {
+    //     0, 1, 2,
+    //     2, 3, 0
+    // };
+
+    // //Create & Initialize Element Buffer Object
+    // GLuint ebo;
+    // glGenBuffers(1, &ebo);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+    //     sizeof(elements), elements, GL_STATIC_DRAW);
+
+    // //Create Texture Buffer Object
+    // GLuint tex;
+    // glGenTextures(1, &tex);
+    // glBindTexture(GL_TEXTURE_2D, tex);
+
+    // //Texture Wrapping
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // // // If you use clamp to border
+    // // float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+    // // glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
+
+    // //Set Mipmap Filtering
+    // glTexParameteri(GL_TEXTURE_2D,
+    //     GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D,
+    //     GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+    // //load image
+    // int width, height, nrChannels;
+    // unsigned char *data = stbi_load(
+    //     image, &width, &height, &nrChannels, 0);
+    // if (!data) {
+    //     fprintf(stderr, "Failed to load texture\n");
+    // }   
+    // //Generate Texture
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 2, 2, 0,GL_RGB, GL_FLOAT, data);
+    // //Texture Filtering
+    // glGenerateMipmap(GL_TEXTURE_2D);
+
+    // stbi_image_free(data);
+}
+
 int main(int argc, char * argv[]) {
 
     GLFWwindow* m_Window = CreateWindow("OpenGL", mWidth, mHeight);
     CreateOpenGLContext(m_Window);
 
-
-    // Create Context and Load OpenGL Functions
-    glfwMakeContextCurrent(m_Window);
-    gladLoadGL();
-    fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
-
     //Vertex Array Object VAO: Stores attributes and VBO links
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
-
 
     //Creates a Vertex Buffer Object (VBO)
     GLuint vbo;
