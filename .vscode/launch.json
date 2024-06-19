@@ -1,0 +1,26 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "MIDebuggerPath": "/usr/bin/lldb",
+    "configurations": [
+        {
+            "name": "Launch (lldb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/Build/MyFirstEngine/MyFirstEngine",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "CG_PDF_VERBOSE",
+                    "value": "${workspaceFolder}/Build/MyFirstEngine"
+                }
+            ],
+            "externalConsole": false,
+            "MIMode": "lldb",
+        }
+    ],
+}
