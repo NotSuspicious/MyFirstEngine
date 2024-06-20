@@ -33,9 +33,12 @@ float vertices[] = {
 const int mWidth = 1200;
 const int mHeight = 800;
 
-const char* image = "./Assets/william.jpg";
+const char* williamImg = "./Assets/william.jpg";
+const char* faceImg = "./Assets/awesomeface.png";
 
 const unsigned int vertexSize = sizeof(float) * 8;
+
+int textureCount = 0;
 //GLOBAL VARIABLES
 
 const char* LoadShaderAsString(const std::string &filename) {
@@ -89,7 +92,7 @@ GLuint InitializeShaders() {
     glAttachShader(shaderProgram, fragShader);
 
     //Specify what buffer Frag Shader output is written
-    glBindFragDataLocation(shaderProgram, 0, "outColor");
+    glBindFragDataLocation(shaderProgram, 0, "FragColor");
 
     glLinkProgram(shaderProgram);
     glUseProgram(shaderProgram);
@@ -124,19 +127,20 @@ void CreateOpenGLContext(GLFWwindow* mWindow) {
 }
 
 GLuint GenerateTextureFromImage(const char* image, int& width, int& height, int& nChannels) {
+    if (textureCount > 31) {
+        fprintf(stderr, "Too many textures\n");
+        return -1;
+    }
 
     //Create Texture Buffer Object
     GLuint tex;
     glGenTextures(1, &tex);
+    glActiveTexture(GL_TEXTURE0 + textureCount);
     glBindTexture(GL_TEXTURE_2D, tex);
 
     //Texture Wrapping
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // // If you use clamp to border
-    // float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
-    // glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
-
     //Set Mipmap Filtering
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -149,12 +153,20 @@ GLuint GenerateTextureFromImage(const char* image, int& width, int& height, int&
         fprintf(stderr, "Failed to load texture\n");
         return -1;
     }   
-    //Generate Texture
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0,GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    if (nChannels == 3) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    } else if (nChannels == 4) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    } else {
+        fprintf(stderr, "Unsupported number of channels: %d\n", nChannels);
+        return -1;
+    }
     //Generate Mipmaps
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(data);
+    textureCount++;
     return tex;
 }
 
@@ -162,6 +174,11 @@ int main(int argc, char * argv[]) {
 
     GLFWwindow* m_Window = CreateWindow("OpenGL", mWidth, mHeight);
     CreateOpenGLContext(m_Window);
+
+    GLuint elements[] = {
+        0, 1, 2,
+        2, 3, 0
+    };
 
     //Vertex Array Object VAO: Stores attributes and VBO links
     GLuint vao;
@@ -175,6 +192,13 @@ int main(int argc, char * argv[]) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     //Copy Vertex Data
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    //Create & Initialize Element Buffer Object
+    GLuint ebo;
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+        sizeof(elements), elements, GL_STATIC_DRAW);
 
     GLuint shaderProgram = InitializeShaders();
 
@@ -191,21 +215,19 @@ int main(int argc, char * argv[]) {
     glVertexAttribPointer(colAttribute, 3, GL_FLOAT, GL_FALSE, vertexSize, (void*)(sizeof(float)*3));
     glVertexAttribPointer(texCoordAttribute, 2, GL_FLOAT, GL_FALSE, vertexSize, (void*)(sizeof(float)*6));
 
-    GLuint elements[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
+    //Load Textures
+    int width1, height1, nChannels1;
+    GLuint tex1 = GenerateTextureFromImage(williamImg, width1, height1, nChannels1);
+    int width2, height2, nChannels2;
+    GLuint tex2 = GenerateTextureFromImage(faceImg, width2, height2, nChannels2);
 
-    //Create & Initialize Element Buffer Object
-    GLuint ebo;
-    glGenBuffers(1, &ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-        sizeof(elements), elements, GL_STATIC_DRAW);
+    //Get uniform reference from frag shader
+    GLuint textureUni1 = glGetUniformLocation(shaderProgram, "m_Texture1");
+    GLuint textureUni2 = glGetUniformLocation(shaderProgram, "m_Texture2");
+    glUniform1i(textureUni1, 0);
+    glUniform1i(textureUni2, 1);
 
-    int width, height, nChannels;
-    GLuint tex = GenerateTextureFromImage(image, width, height, nChannels);
-
+    glBindVertexArray(vao);
 
     // Rendering Loop
     while (glfwWindowShouldClose(m_Window) == false) {
@@ -218,10 +240,8 @@ int main(int argc, char * argv[]) {
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glBindTexture(GL_TEXTURE_2D, tex);
-        glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
 
         // Flip Buffers and Draw
