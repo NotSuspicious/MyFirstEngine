@@ -1,4 +1,6 @@
 // System Headers
+#include "glm/fwd.hpp"
+#include "glm/trigonometric.hpp"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <assimp/Importer.hpp>
@@ -8,6 +10,8 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#include <glm/gtc/matrix_transform.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION 
 #include <stb_image.h>
@@ -30,7 +34,7 @@ float vertices[] = {
     -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f    // top left 
 };
 
-const int mWidth = 1200;
+const int mWidth = 800;
 const int mHeight = 800;
 
 const char* williamImg = "./Assets/william.jpg";
@@ -277,6 +281,12 @@ int main(int argc, char * argv[]) {
     glUniform1i(textureUni1, 0);
     glUniform1i(textureUni2, 1);
 
+
+    
+
+    
+
+
     glBindVertexArray(vao);
 
     // Rendering Loop
@@ -289,7 +299,26 @@ int main(int argc, char * argv[]) {
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+        glm::mat4 world = glm::mat4(1.0f);
+
+        glm::mat4 view = glm::mat4(1.0f);
+        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+
+        glm::mat4 projection;
+        projection = glm::perspective(glm::radians(45.0f), (float)mWidth/(float)mHeight, 0.1f, 100.0f);
+
+
+        GLuint modelUni = glGetUniformLocation(shaderProgram, "model");
+        GLuint worldUni = glGetUniformLocation(shaderProgram, "world");
+        GLuint viewUni = glGetUniformLocation(shaderProgram, "view");
+        GLuint projectionUni = glGetUniformLocation(shaderProgram, "projection");
+        glUniformMatrix4fv(modelUni, 1, GL_FALSE, glm::value_ptr(model));
+        glUniformMatrix4fv(worldUni, 1, GL_FALSE, glm::value_ptr(world));
+        glUniformMatrix4fv(viewUni, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projectionUni, 1, GL_FALSE, glm::value_ptr(projection));
 
     
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
