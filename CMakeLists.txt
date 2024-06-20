@@ -64,7 +64,18 @@ target_link_libraries(${PROJECT_NAME} assimp glfw
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
 
-add_custom_command(
-    TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/MyFirstEngine/Shaders $<TARGET_FILE_DIR:${PROJECT_NAME}>
-    DEPENDS ${PROJECT_SHADERS})
+
+add_custom_target(shaders_copy)
+
+file(GLOB PROJECT_SHADERS_REL RELATIVE ${PROJECT_SOURCE_DIR} MyFirstEngine/Shaders/*.comp
+                            MyFirstEngine/Shaders/*.frag
+                            MyFirstEngine/Shaders/*.geom
+                            MyFirstEngine/Shaders/*.vert)
+
+foreach(shaderFile ${PROJECT_SHADERS_REL})
+    add_custom_command(TARGET shaders_copy PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    ${PROJECT_SOURCE_DIR}/${shaderFile}
+                    ${CMAKE_BINARY_DIR}/${shaderFile})
+endforeach()
+
+add_dependencies(${PROJECT_NAME} shaders_copy)
