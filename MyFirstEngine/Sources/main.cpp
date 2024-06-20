@@ -39,6 +39,8 @@ const char* faceImg = "./Assets/awesomeface.png";
 const unsigned int vertexSize = sizeof(float) * 8;
 
 int textureCount = 0;
+
+GLuint shaderProgram;
 //GLOBAL VARIABLES
 
 const char* LoadShaderAsString(const std::string &filename) {
@@ -170,6 +172,54 @@ GLuint GenerateTextureFromImage(const char* image, int& width, int& height, int&
     return tex;
 }
 
+void OnUpArrowPressed() {
+    GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_yVertexOffset");
+    float  offsetRef;
+    glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
+    glUniform1f(offsetIndex, offsetRef - 0.001f);
+
+}
+
+void OnDownArrowPressed() {
+    GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_yVertexOffset");
+    float offsetRef;
+    glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
+    glUniform1f(offsetIndex, offsetRef + 0.001f);
+}
+
+void OnLeftArrowPressed() {
+    GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_xVertexOffset");
+    float  offsetRef;
+    glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
+    glUniform1f(offsetIndex, offsetRef + 0.001f);
+
+}
+
+void OnRightArrowPressed() {
+    GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_xVertexOffset");
+    float offsetRef;
+    glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
+    glUniform1f(offsetIndex, offsetRef - 0.001f);
+}
+
+void ProcessInput(GLFWwindow* window) {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        OnUpArrowPressed();
+
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        OnDownArrowPressed();
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        OnLeftArrowPressed();
+
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        OnRightArrowPressed();
+}
+
+
 int main(int argc, char * argv[]) {
 
     GLFWwindow* m_Window = CreateWindow("OpenGL", mWidth, mHeight);
@@ -200,7 +250,7 @@ int main(int argc, char * argv[]) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER,
         sizeof(elements), elements, GL_STATIC_DRAW);
 
-    GLuint shaderProgram = InitializeShaders();
+    shaderProgram = InitializeShaders();
 
     //Get reference to postion from vertex shader
     GLint posAttribute = glGetAttribLocation(shaderProgram, "position");
@@ -231,14 +281,15 @@ int main(int argc, char * argv[]) {
 
     // Rendering Loop
     while (glfwWindowShouldClose(m_Window) == false) {
-        if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-            glfwSetWindowShouldClose(m_Window, true);
+        ProcessInput(m_Window);
 
 
 
         // Background Fill Color
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
+
+        
 
     
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
