@@ -1,4 +1,5 @@
 // System Headers
+#include "glm/ext/quaternion_geometric.hpp"
 #include "glm/fwd.hpp"
 #include "glm/trigonometric.hpp"
 #include <glad/glad.h>
@@ -27,24 +28,69 @@ const std::string vertexShaderPath = "./Shaders/shader.vert";
 const std::string fragShaderPath = "./Shaders/shader.frag";
 
 float vertices[] = {
-    // positions, colors, texture coords
-     0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-     0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-    -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-    -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 1.0f,   0.0f, 1.0f    // top left 
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
 };
 
-const int mWidth = 800;
+const int mWidth = 1200;
 const int mHeight = 800;
 
 const char* williamImg = "./Assets/william.jpg";
 const char* faceImg = "./Assets/awesomeface.png";
 
-const unsigned int vertexSize = sizeof(float) * 8;
+const unsigned int vertexSize = sizeof(float) * 5;
 
 int textureCount = 0;
 
 GLuint shaderProgram;
+
+glm::vec3 m_cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 m_cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
+float cameraSpeed;
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
 //GLOBAL VARIABLES
 
 const char* LoadShaderAsString(const std::string &filename) {
@@ -176,34 +222,36 @@ GLuint GenerateTextureFromImage(const char* image, int& width, int& height, int&
     return tex;
 }
 
-void OnUpArrowPressed() {
+void OffsetVertices(float offset) {
     GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_yVertexOffset");
-    float  offsetRef;
+    float offsetRef;
     glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
-    glUniform1f(offsetIndex, offsetRef - 0.001f);
+    glUniform1f(offsetIndex, offsetRef + offset);
+}
 
+void OffsetCamera(glm::vec3 offset) {
+    GLfloat glMatrix[16];
+    GLuint viewUni = glGetUniformLocation(shaderProgram, "view");
+    glGetUniformfv(shaderProgram, viewUni, glMatrix);
+    glm::mat4 view = glm::make_mat4(glMatrix);
+    view = glm::translate(view, glm::vec3(0.0f, 5.0f, 0.0f));
+    glUniformMatrix4fv(viewUni, 1, GL_FALSE, glm::value_ptr(view));
+}
+
+void OnUpArrowPressed() {
+    cameraPos += cameraSpeed * m_cameraFront;
 }
 
 void OnDownArrowPressed() {
-    GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_yVertexOffset");
-    float offsetRef;
-    glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
-    glUniform1f(offsetIndex, offsetRef + 0.001f);
+    cameraPos -= cameraSpeed * m_cameraFront;
 }
 
 void OnLeftArrowPressed() {
-    GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_xVertexOffset");
-    float  offsetRef;
-    glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
-    glUniform1f(offsetIndex, offsetRef + 0.001f);
-
+    cameraPos -= glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
 }
 
 void OnRightArrowPressed() {
-    GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_xVertexOffset");
-    float offsetRef;
-    glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
-    glUniform1f(offsetIndex, offsetRef - 0.001f);
+    cameraPos += glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
 }
 
 void ProcessInput(GLFWwindow* window) {
@@ -231,7 +279,17 @@ int main(int argc, char * argv[]) {
 
     GLuint elements[] = {
         0, 1, 2,
-        2, 3, 0
+        4, 5, 1,
+        3, 2, 6,
+        4, 5, 6,
+        2, 3, 0,
+        1, 0, 4, 
+        6, 7, 3, 
+        6, 7, 4,
+        1, 5, 6, 
+        6, 2, 1,
+        4, 0, 3, 
+        3, 7, 4
     };
 
     //Vertex Array Object VAO: Stores attributes and VBO links
@@ -256,18 +314,19 @@ int main(int argc, char * argv[]) {
 
     shaderProgram = InitializeShaders();
 
+    // GLint colAttribute = glGetAttribLocation(shaderProgram, "color");
+    // glEnableVertexAttribArray(colAttribute);
+    // glVertexAttribPointer(colAttribute, 3, GL_FLOAT, GL_FALSE, vertexSize, (void*)(sizeof(float)*3));
+
     //Get reference to postion from vertex shader
     GLint posAttribute = glGetAttribLocation(shaderProgram, "position");
-    GLint colAttribute = glGetAttribLocation(shaderProgram, "color");
     GLint texCoordAttribute = glGetAttribLocation(shaderProgram, "texCoord");
     //Enable the attribute
     glEnableVertexAttribArray(posAttribute);
-    glEnableVertexAttribArray(colAttribute);
     glEnableVertexAttribArray(texCoordAttribute);
     //Specify how data is retrieved from VBO
     glVertexAttribPointer(posAttribute, 3, GL_FLOAT, GL_FALSE, vertexSize, 0);
-    glVertexAttribPointer(colAttribute, 3, GL_FLOAT, GL_FALSE, vertexSize, (void*)(sizeof(float)*3));
-    glVertexAttribPointer(texCoordAttribute, 2, GL_FLOAT, GL_FALSE, vertexSize, (void*)(sizeof(float)*6));
+    glVertexAttribPointer(texCoordAttribute, 2, GL_FLOAT, GL_FALSE, vertexSize, (void*)(sizeof(float)*3));
 
     //Load Textures
     int width1, height1, nChannels1;
@@ -283,46 +342,76 @@ int main(int argc, char * argv[]) {
 
 
     
-
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-1.5f, -2.2f, -2.5f),  
+        glm::vec3(-3.8f, -2.0f, -12.3f),  
+        glm::vec3( 2.4f, -0.4f, -3.5f),  
+        glm::vec3(-1.7f,  3.0f, -7.5f),  
+        glm::vec3( 1.3f, -2.0f, -2.5f),  
+        glm::vec3( 1.5f,  2.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f)  
+    };
     
 
+    glEnable(GL_DEPTH_TEST);
 
-    glBindVertexArray(vao);
+    
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
     // Rendering Loop
     while (glfwWindowShouldClose(m_Window) == false) {
+
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
+
+        cameraSpeed = 2.5f * deltaTime;
+
         ProcessInput(m_Window);
 
-
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Background Fill Color
         glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
 
-        glm::mat4 world = glm::mat4(1.0f);
 
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+        // view = glm::rotate(view, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
         glm::mat4 projection;
         projection = glm::perspective(glm::radians(45.0f), (float)mWidth/(float)mHeight, 0.1f, 100.0f);
+        
+        view = glm::lookAt(cameraPos, cameraPos + m_cameraFront, m_cameraUp);
 
-
+        // glm::mat4 view;
+        // view = CameraLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+        // view = CameraTranslate(glm::vec3(camX, 0.0f, camZ));
+        
         GLuint modelUni = glGetUniformLocation(shaderProgram, "model");
-        GLuint worldUni = glGetUniformLocation(shaderProgram, "world");
         GLuint viewUni = glGetUniformLocation(shaderProgram, "view");
         GLuint projectionUni = glGetUniformLocation(shaderProgram, "projection");
         glUniformMatrix4fv(modelUni, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(worldUni, 1, GL_FALSE, glm::value_ptr(world));
         glUniformMatrix4fv(viewUni, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionUni, 1, GL_FALSE, glm::value_ptr(projection));
 
-    
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        
 
+        for (size_t i = 0 ; i < sizeof(cubePositions) ; i++) {
+            glm::mat4 world = glm::mat4(1.0f);
+            world = glm::translate(world, cubePositions[i]);
+            GLuint worldUni = glGetUniformLocation(shaderProgram, "world");
+            glUniformMatrix4fv(worldUni, 1, GL_FALSE, glm::value_ptr(world));
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+    
+        // glDrawElements(GL_TRIANGLES, sizeof(elements), GL_UNSIGNED_INT, 0);
 
         // Flip Buffers and Draw
         glfwSwapBuffers(m_Window);
