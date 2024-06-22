@@ -28,6 +28,7 @@ const std::string vertexShaderPath = "./Shaders/shader.vert";
 const std::string fragShaderPath = "./Shaders/shader.frag";
 
 float vertices[] = {
+    //Position                          //Texture Coords
     -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
      0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
      0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
@@ -91,6 +92,17 @@ float cameraSpeed;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+float lastX = mWidth / 2.0f;
+float lastY = mHeight / 2.0f;
+
+
+float pitch = 0.0f, yaw = -90.0f;
+bool firstMouse;
+const float sensitivity = 0.1f;
+
+float fov = 45.0f;
+
 //GLOBAL VARIABLES
 
 const char* LoadShaderAsString(const std::string &filename) {
@@ -258,24 +270,62 @@ void ProcessInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 
-    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         OnUpArrowPressed();
 
-    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
         OnDownArrowPressed();
 
-    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
         OnLeftArrowPressed();
 
-    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         OnRightArrowPressed();
+
+    
 }
 
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos; 
+    lastY = ypos;
+    xoffset *= sensitivity;
+    yoffset *= sensitivity;
+    yaw += xoffset;
+    pitch += yoffset;
+    if (pitch > 89.0f) {
+        pitch = 89.0f;
+    }
+    if (pitch < -89.0f) {
+        pitch = -89.0f;
+    }
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+    fov -= (float)yoffset;
+    if (fov < 1.0f) 
+        fov = 1.0f;
+    if (fov > 60.0f)
+        fov = 60.0f;
+}
 
 int main(int argc, char * argv[]) {
 
     GLFWwindow* m_Window = CreateWindow("OpenGL", mWidth, mHeight);
     CreateOpenGLContext(m_Window);
+
+    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    
+    glfwSetCursorPosCallback(m_Window, mouse_callback);
+    glfwSetScrollCallback(m_Window, scroll_callback);
+
+    
 
     GLuint elements[] = {
         0, 1, 2,
@@ -386,8 +436,14 @@ int main(int argc, char * argv[]) {
         // view = glm::rotate(view, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
         glm::mat4 projection;
-        projection = glm::perspective(glm::radians(45.0f), (float)mWidth/(float)mHeight, 0.1f, 100.0f);
+        projection = glm::perspective(glm::radians(fov), (float)mWidth/(float)mHeight, 0.1f, 100.0f);
         
+        glm::vec3 direction;
+        direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+        direction.y = glm::sin(glm::radians(pitch));
+        direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+        m_cameraFront = glm::normalize(direction);
+
         view = glm::lookAt(cameraPos, cameraPos + m_cameraFront, m_cameraUp);
 
         // glm::mat4 view;
