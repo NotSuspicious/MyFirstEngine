@@ -71,30 +71,13 @@ float vertices[] = {
      0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
     -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
     -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-};
-
-const int mWidth = 1200;
-const int mHeight = 800;
-
-const char* williamImg = "./Assets/william.jpg";
-const char* faceImg = "./Assets/awesomeface.png";
-const char* dogImg = "./Assets/dog.png";
-
-const unsigned int vertexSize = sizeof(float) * 5;
-
-int textureCount = 0;
+}
 
 GLuint shaderProgram;
 
 
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 float cameraSpeed;
-
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
-
-float lastX = mWidth / 2.0f;
-float lastY = mHeight / 2.0f;
 
 
 float pitch = 0.0f, yaw = -90.0f;
@@ -104,65 +87,6 @@ const float sensitivity = 0.1f;
 float fov = 45.0f;
 
 //GLOBAL VARIABLES
-
-const char* LoadShaderAsString(const std::string &filename) {
-    std::string result;
-    std::string line;
-
-    std::ifstream file(filename);
-
-    if(file.is_open()) {
-        while (std::getline(file, line)) {
-            result += line + "\n";
-        }
-        file.close();
-    } else {
-        printf("Failed to open file: %s\n", filename.c_str());
-    }
-    char* cstr = new char[result.length() + 1];
-    strcpy(cstr, result.c_str());
-    return cstr;
-}
-
-
-GLuint InitializeShaders() {
-    const char* vertexSource = LoadShaderAsString(vertexShaderPath);
-    const char* fragSource = LoadShaderAsString(fragShaderPath);
-    //Create and Load a Vertex Shader
-    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexSource, NULL);
-    glCompileShader(vertexShader);
-
-    //Create and Load Frag Shader
-    GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragShader, 1, &fragSource, NULL);
-    glCompileShader(fragShader);
-
-    //Vertext Shader Compilation Debugging
-    GLint vertexStatus, fragStatus;
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &vertexStatus);
-    glGetShaderiv(fragShader, GL_COMPILE_STATUS, &fragStatus);
-    char buffer[512];
-    glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
-    if (vertexStatus && fragStatus) {
-        printf("Shaders compiled successfully!");
-    } else {
-        printf("Shader compilation failed!");
-    }
-
-    //Create shader program
-    GLuint shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragShader);
-
-    //Specify what buffer Frag Shader output is written
-    glBindFragDataLocation(shaderProgram, 0, "FragColor");
-
-    glLinkProgram(shaderProgram);
-    glUseProgram(shaderProgram);
-
-    return shaderProgram;
-}
 
 GLuint GenerateTextureFromImage(const char* image, int& width, int& height, int& nChannels) {
     if (textureCount > 31) {
