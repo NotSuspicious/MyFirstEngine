@@ -33,7 +33,9 @@ include_directories(MyFirstEngine/Headers/
                     MyFirstEngine/Vendor/glad/include/
                     MyFirstEngine/Vendor/glfw/include/
                     MyFirstEngine/Vendor/glm/
-                    MyFirstEngine/Vendor/stb/)
+                    MyFirstEngine/Vendor/stb/
+                    MyFirstEngine/Sources/
+                    MyFirstEngine/Sources/Components)
 
 file(GLOB VENDORS_SOURCES MyFirstEngine/Vendor/glad/src/glad.c)
 file(GLOB PROJECT_HEADERS MyFirstEngine/Headers/*.hpp)

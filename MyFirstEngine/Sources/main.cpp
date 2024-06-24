@@ -1,4 +1,5 @@
 // System Headers
+#include "Component.h"
 #include "glm/ext/quaternion_geometric.hpp"
 #include "glm/fwd.hpp"
 #include "glm/trigonometric.hpp"
@@ -77,6 +78,7 @@ const int mHeight = 800;
 
 const char* williamImg = "./Assets/william.jpg";
 const char* faceImg = "./Assets/awesomeface.png";
+const char* dogImg = "./Assets/dog.png";
 
 const unsigned int vertexSize = sizeof(float) * 5;
 
@@ -84,10 +86,8 @@ int textureCount = 0;
 
 GLuint shaderProgram;
 
-glm::vec3 m_cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 m_cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
 glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, 0.0f);
 float cameraSpeed;
 
 float deltaTime = 0.0f;
@@ -164,32 +164,6 @@ GLuint InitializeShaders() {
     return shaderProgram;
 }
 
-GLFWwindow* CreateWindow(const char* title, int width, int height) {
-    // Load GLFW and Create a Window
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    auto mWindow = glfwCreateWindow(width, height, title, nullptr, nullptr);
-
-    // Check for Valid Context
-    if (mWindow == nullptr) {
-        fprintf(stderr, "Failed to Create OpenGL Context");
-        return NULL;
-    }
-
-    return mWindow;
-}
-
-void CreateOpenGLContext(GLFWwindow* mWindow) {
-    // Create Context and Load OpenGL Functions
-    glfwMakeContextCurrent(mWindow);
-    gladLoadGL();
-    fprintf(stderr, "OpenGL %s\n", glGetString(GL_VERSION));
-}
-
 GLuint GenerateTextureFromImage(const char* image, int& width, int& height, int& nChannels) {
     if (textureCount > 31) {
         fprintf(stderr, "Too many textures\n");
@@ -234,96 +208,21 @@ GLuint GenerateTextureFromImage(const char* image, int& width, int& height, int&
     return tex;
 }
 
-void OffsetVertices(float offset) {
-    GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_yVertexOffset");
-    float offsetRef;
-    glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
-    glUniform1f(offsetIndex, offsetRef + offset);
-}
-
-void OffsetCamera(glm::vec3 offset) {
-    GLfloat glMatrix[16];
-    GLuint viewUni = glGetUniformLocation(shaderProgram, "view");
-    glGetUniformfv(shaderProgram, viewUni, glMatrix);
-    glm::mat4 view = glm::make_mat4(glMatrix);
-    view = glm::translate(view, glm::vec3(0.0f, 5.0f, 0.0f));
-    glUniformMatrix4fv(viewUni, 1, GL_FALSE, glm::value_ptr(view));
-}
-
-void OnUpArrowPressed() {
-    cameraPos += cameraSpeed * m_cameraFront;
-}
-
-void OnDownArrowPressed() {
-    cameraPos -= cameraSpeed * m_cameraFront;
-}
-
-void OnLeftArrowPressed() {
-    cameraPos -= glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
-}
-
-void OnRightArrowPressed() {
-    cameraPos += glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * cameraSpeed;
-}
+ void OffsetVertices(float offset) {
+        GLuint offsetIndex = glGetUniformLocation(shaderProgram, "m_yVertexOffset");
+        float offsetRef;
+        glGetUniformfv(shaderProgram, offsetIndex, &offsetRef);
+        glUniform1f(offsetIndex, offsetRef + offset);
+    }
 
 void ProcessInput(GLFWwindow* window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        OnUpArrowPressed();
-
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        OnDownArrowPressed();
-
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        OnLeftArrowPressed();
-
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        OnRightArrowPressed();
-
-    
-}
-
-void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    if (firstMouse) {
-        lastX = xpos;
-        lastY = ypos;
-        firstMouse = false;
-    }
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
-    lastX = xpos; 
-    lastY = ypos;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
-    yaw += xoffset;
-    pitch += yoffset;
-    if (pitch > 89.0f) {
-        pitch = 89.0f;
-    }
-    if (pitch < -89.0f) {
-        pitch = -89.0f;
-    }
-}
-
-void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
-    fov -= (float)yoffset;
-    if (fov < 1.0f) 
-        fov = 1.0f;
-    if (fov > 60.0f)
-        fov = 60.0f;
 }
 
 int main(int argc, char * argv[]) {
 
-    GLFWwindow* m_Window = CreateWindow("OpenGL", mWidth, mHeight);
-    CreateOpenGLContext(m_Window);
 
-    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    
-    glfwSetCursorPosCallback(m_Window, mouse_callback);
-    glfwSetScrollCallback(m_Window, scroll_callback);
 
     
 
