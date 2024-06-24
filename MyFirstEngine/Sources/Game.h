@@ -28,6 +28,8 @@ int textureCount = 0;
 
 bool firstMouse;
 
+GLuint shaderProgram;
+
 public:
     Game();
     void AddGameObject(class GameObject* gameObject);
@@ -56,7 +58,6 @@ private:
 
     GLFWwindow* m_Window;
 
-    GLuint shaderProgram;
     bool m_isRunning;
 
     void Mouse_Callback(GLFWwindow* window, double xpos, double ypos);

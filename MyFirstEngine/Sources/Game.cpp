@@ -1,6 +1,12 @@
 #include "Game.h"
 #include <fstream>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+#include <cstdio>
+#include <istream>
+
 Game::Game()
     : m_isRunning(true)
 {
@@ -120,7 +126,50 @@ const char* Game::LoadShaderAsString(const std::string& filename)
     return cstr;
 }
 
-GLuint GenerateTexture(const char* image, int& width, int& height, int& nChannels);
+GLuint Game::GenerateTexture(const char* image, int& width, int& height, int& nChannels)
+{
+    if (textureCount > 31) {
+        fprintf(stderr, "Too many textures\n");
+        return -1;
+    }
+
+    //Create Texture Buffer Object
+    GLuint tex;
+    glGenTextures(1, &tex);
+    glActiveTexture(GL_TEXTURE0 + textureCount);
+    glBindTexture(GL_TEXTURE_2D, tex);
+
+    //Texture Wrapping
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    //Set Mipmap Filtering
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+    //load image
+    stbi_set_flip_vertically_on_load(true);  
+    unsigned char *data = stbi_load(
+        image, &width, &height, &nChannels, 0);
+    if (!data) {
+        fprintf(stderr, "Failed to load texture\n");
+        return -1;
+    }   
+
+    if (nChannels == 3) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    } else if (nChannels == 4) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    } else {
+        fprintf(stderr, "Unsupported number of channels: %d\n", nChannels);
+        return -1;
+    }
+    //Generate Mipmaps
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(data);
+    textureCount++;
+    return tex;
+}
 bool Game::Initialize()
 {
     m_Window = CreateWindow("OpenGL", mWidth, mHeight);

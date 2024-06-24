@@ -80,8 +80,6 @@ glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
 float cameraSpeed;
 
 
-float pitch = 0.0f, yaw = -90.0f;
-bool firstMouse;
 const float sensitivity = 0.1f;
 
 float fov = 45.0f;
@@ -146,24 +144,6 @@ void ProcessInput(GLFWwindow* window) {
 
 int main(int argc, char * argv[]) {
 
-
-
-    
-
-    GLuint elements[] = {
-        0, 1, 2,
-        4, 5, 1,
-        3, 2, 6,
-        4, 5, 6,
-        2, 3, 0,
-        1, 0, 4, 
-        6, 7, 3, 
-        6, 7, 4,
-        1, 5, 6, 
-        6, 2, 1,
-        4, 0, 3, 
-        3, 7, 4
-    };
 
     //Vertex Array Object VAO: Stores attributes and VBO links
     GLuint vao;
