@@ -2,8 +2,11 @@
 
 #include "Component.h"
 #include "GLFW/glfw3.h"
+#include "glm/fwd.hpp"
 #include <glad/glad.h>
 #include <vector>
+
+#include "GameObject.h"
 
 class Game
 {
@@ -28,12 +31,61 @@ int textureCount = 0;
 
 bool firstMouse;
 
-GLuint shaderProgram;
+GLuint shaderProgram;   
+GameObject* m_CameraObj;
+class Camera* m_Camera;
+
+float vertices[180] = {
+    //Position                          //Texture Coords
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
+
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
+
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
+     0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+     0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
+    -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
+    -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
+};
+
+std::vector<glm::vec3> cubePositions;
 
 public:
     Game();
-    void AddGameObject(class GameObject* gameObject);
-    void RemoveGameObject(class GameObject* gameObject);
+    void AddGameObject(GameObject* gameObject);
+    void RemoveGameObject(GameObject* gameObject);
 
     const static Game* Instance() { return m_Instance; }
 
@@ -53,13 +105,17 @@ private:
 
     static Game* m_Instance;
 
-    std::vector<class GameObject*> m_GameObjects;
-    std::vector<class GameObject*> m_PendingGameObjects;
+    std::vector<GameObject*> m_GameObjects;
+    std::vector<GameObject*> m_PendingGameObjects;
 
     GLFWwindow* m_Window;
 
     bool m_isRunning;
 
-    void Mouse_Callback(GLFWwindow* window, double xpos, double ypos);
-    void Scroll_Callback(GLFWwindow* window, double xoffset, double yoffset);
+    void Mouse_Callback(GLFWwindow*, double xpos, double ypos);
+    void Scroll_Callback(GLFWwindow*, double xoffset, double yoffset);
+
+public:
+    bool IsRunning() { return m_isRunning; }
+    GLFWwindow* GetWindow() const { return m_Window; }
 };

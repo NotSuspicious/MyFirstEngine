@@ -3,7 +3,8 @@
 #include <glm/gtc/quaternion.hpp>
 #include <vector>
 #include "Component.h"
-#include "component.h"
+
+#include "Game.h"
 
 class GameObject
 {
@@ -29,9 +30,9 @@ public:
         m_Components.push_back(component);
     }
 
-    const glm::vec3& GetPosition() const { return m_Position; }
-    const glm::quat& GetRotation() const { return m_Rotation; }
-    const glm::vec3& GetScale() const { return m_Scale; }
+    glm::vec3& GetPosition() { return m_Position; }
+    glm::quat& GetRotation() { return m_Rotation; }
+    glm::vec3& GetScale() { return m_Scale; }
     
 private: 
 
@@ -58,7 +59,8 @@ private:
             return;
         for(Component* component : m_Components)
         {
-            component->ProcessInput();
+            Game* game = Game::Instance();
+            component->ProcessInput(game->GetWindow());
             OnProcessInput();
         }
     }

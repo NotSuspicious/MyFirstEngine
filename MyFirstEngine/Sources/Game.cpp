@@ -1,4 +1,6 @@
-#include "Game.h"
+#include "glm/fwd.hpp"
+#include <glm/gtc/type_ptr.hpp>
+
 #include <fstream>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -7,10 +9,172 @@
 #include <cstdio>
 #include <istream>
 
+#include "Camera.h"
+#include "GameObject.h"
+#include "Game.h"
+#include "Component.h"
+
 Game::Game()
     : m_isRunning(true)
 {
     m_Instance = this;
+}
+
+bool Game::Initialize()
+{
+    cubePositions = {
+        glm::vec3( 0.0f,  0.0f,  0.0f), 
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-1.5f, -2.2f, -2.5f),  
+        glm::vec3(-3.8f, -2.0f, -12.3f),  
+        glm::vec3( 2.4f, -0.4f, -3.5f),  
+        glm::vec3(-1.7f,  3.0f, -7.5f),  
+        glm::vec3( 1.3f, -2.0f, -2.5f),  
+        glm::vec3( 1.5f,  2.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f)  
+};
+
+    m_Window = CreateWindow("OpenGL", mWidth, mHeight);
+    CreateOpenGLContext(m_Window);
+
+    //Create a camera gameobject
+    m_CameraObj = new GameObject();
+    Camera* CameraComp = new Camera(m_CameraObj);
+    m_CameraObj->AddComponent(CameraComp);
+    AddGameObject(m_CameraObj);
+
+    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    
+    glfwSetCursorPosCallback(m_Window, this->Mouse_Callback);
+    glfwSetScrollCallback(m_Window, this->Scroll_Callback);
+
+    //Vertex Array Object VAO: Stores attributes and VBO links
+    GLuint vao;
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    //Creates a Vertex Buffer Object (VBO)
+    GLuint vbo;
+    glGenBuffers(1, &vbo);
+    //Activates the VBO
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    //Copy Vertex Data
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // //Create & Initialize Element Buffer Object
+    // GLuint ebo;
+    // glGenBuffers(1, &ebo);
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    // glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+    //     sizeof(elements), elements, GL_STATIC_DRAW);
+
+    shaderProgram = InitializeShaders();
+
+    // GLint colAttribute = glGetAttribLocation(shaderProgram, "color");
+    // glEnableVertexAttribArray(colAttribute);
+    // glVertexAttribPointer(colAttribute, 3, GL_FLOAT, GL_FALSE, vertexSize, (void*)(sizeof(float)*3));
+
+    //Get reference to postion from vertex shader
+    GLint posAttribute = glGetAttribLocation(shaderProgram, "position");
+    GLint texCoordAttribute = glGetAttribLocation(shaderProgram, "texCoord");
+    //Enable the attribute
+    glEnableVertexAttribArray(posAttribute);
+    glEnableVertexAttribArray(texCoordAttribute);
+    //Specify how data is retrieved from VBO
+    glVertexAttribPointer(posAttribute, 3, GL_FLOAT, GL_FALSE, vertexSize, 0);
+    glVertexAttribPointer(texCoordAttribute, 2, GL_FLOAT, GL_FALSE, vertexSize, (void*)(sizeof(float)*3));
+
+    //Load Textures
+    int width1, height1, nChannels1;
+    GLuint tex1 = GenerateTexture(williamImg, width1, height1, nChannels1);
+    int width2, height2, nChannels2;
+    GLuint tex2 = GenerateTexture(faceImg, width2, height2, nChannels2);
+
+    //Get uniform reference from frag shader
+    GLuint textureUni1 = glGetUniformLocation(shaderProgram, "m_Texture1");
+    GLuint textureUni2 = glGetUniformLocation(shaderProgram, "m_Texture2");
+    glUniform1i(textureUni1, 0);
+    glUniform1i(textureUni2, 1);    
+
+    glEnable(GL_DEPTH_TEST);
+
+    glm::mat4 view = glm::mat4(1.0f);
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
+}
+
+void Game::Loop()
+{
+    if (glfwWindowShouldClose(m_Window) == true)
+    {
+        m_isRunning = false;
+    }
+
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+
+    ProcessInput();
+
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Background Fill Color
+    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+
+
+    // view = glm::rotate(view, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+    glm::mat4 view;
+    glm::vec3 direction;
+    float pitch = m_Camera->m_pitch;
+    float yaw = m_Camera->m_yaw;
+    direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+    direction.y = glm::sin(glm::radians(pitch));
+    direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+    m_Camera->m_cameraFront = glm::normalize(direction);
+
+    glm::vec3 pos = m_Camera->GetOwner()->GetPosition();
+    view = glm::lookAt(pos, pos + m_Camera->m_cameraFront, m_Camera->m_cameraUp);
+
+    glm::mat4 projection;
+    projection = glm::perspective(glm::radians(m_Camera->m_fov), (float)mWidth/(float)mHeight, 0.1f, 100.0f);
+    
+
+    // glm::mat4 view;
+    // view = CameraLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
+    // view = CameraTranslate(glm::vec3(camX, 0.0f, camZ));
+    
+    GLuint modelUni = glGetUniformLocation(shaderProgram, "model");
+    GLuint viewUni = glGetUniformLocation(shaderProgram, "view");
+    GLuint projectionUni = glGetUniformLocation(shaderProgram, "projection");
+    glUniformMatrix4fv(modelUni, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewUni, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(projectionUni, 1, GL_FALSE, glm::value_ptr(projection));
+
+    
+
+    for (size_t i = 0 ; i < sizeof(cubePositions) ; i++) {
+        glm::mat4 world = glm::mat4(1.0f);
+        world = glm::translate(world, cubePositions[i]);
+        GLuint worldUni = glGetUniformLocation(shaderProgram, "world");
+        glUniformMatrix4fv(worldUni, 1, GL_FALSE, glm::value_ptr(world));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    // glDrawElements(GL_TRIANGLES, sizeof(elements), GL_UNSIGNED_INT, 0);
+
+    // Flip Buffers and Draw
+    glfwSwapBuffers(m_Window);
+    glfwPollEvents();
+}
+
+void Game::Shutdown()
+{
+    glfwTerminate();
 }
 
 void Game::AddGameObject(class GameObject *gameObject)
@@ -34,7 +198,6 @@ void Game::RemoveGameObject(class GameObject *gameObject)
         }
     }
 }
-
 
 bool Game::CreateOpenGLContext(GLFWwindow* mWindow)
 {
@@ -170,13 +333,29 @@ GLuint Game::GenerateTexture(const char* image, int& width, int& height, int& nC
     textureCount++;
     return tex;
 }
-bool Game::Initialize()
-{
-    m_Window = CreateWindow("OpenGL", mWidth, mHeight);
-    CreateOpenGLContext(m_Window);
 
-    glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    
-    glfwSetCursorPosCallback(m_Window, mouse_callback);
-    glfwSetScrollCallback(m_Window, scroll_callback);
+void Game::Mouse_Callback(GLFWwindow* window, double xpos, double ypos)
+{
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos;
+    lastX = xpos; 
+    lastY = ypos;
+        
+    m_Camera->mouse_callback(m_Window, xoffset, yoffset);
+}
+
+void Game::Scroll_Callback(GLFWwindow*, double xoffset, double yoffset)
+{
+    m_Camera->scroll_callback(m_Window, xoffset, yoffset);
+}
+
+void Game::ProcessInput()
+{
+    if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        glfwSetWindowShouldClose(m_Window, true);
 }
