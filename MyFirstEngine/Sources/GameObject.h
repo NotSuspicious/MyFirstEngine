@@ -32,7 +32,7 @@ public:
     glm::quat& GetRotation() { return m_Rotation; }
     glm::vec3& GetScale() { return m_Scale; }
     
-private: 
+public: 
 
     std::vector<Component*> m_Components;
     
@@ -41,13 +41,13 @@ private:
     glm::vec3 m_Scale;
     State m_State;
 
-    void Update() const
+    void Update(const float deltaTime) const
     {
         if (m_State != ACTIVE)
             return;
         for(Component* component : m_Components)
         {
-            component->Update(0.0f);
+            component->Update(deltaTime);
         }
     }
 

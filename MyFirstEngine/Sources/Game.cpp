@@ -112,11 +112,10 @@ void Game::Loop()
         m_isRunning = false;
     }
 
-    float currentFrame = glfwGetTime();
-    deltaTime = currentFrame - lastFrame;
-    lastFrame = currentFrame;
+
 
     ProcessInput();
+    UpdateGame();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -370,4 +369,34 @@ void Game::ProcessInput()
 {
     if (glfwGetKey(m_Window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(m_Window, true);
+}
+
+void Game::UpdateGame()
+{
+    // Compute deltaTime
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+
+    //Update gameObjects
+    for (auto gameObject : m_GameObjects)
+    {
+        gameObject->Update(deltaTime);
+        gameObject->ProcessInput(m_Window);
+    }
+
+    //Add pending gameObjects
+    for (auto gameObject : m_PendingGameObjects)
+    {
+        m_GameObjects.push_back(gameObject);
+    }
+
+    //Destroy gameObjects
+    for (auto gameObject : m_GameObjects)
+    {
+        if (gameObject->m_State == GameObject::DESTROY)
+        {
+            delete gameObject;
+        }
+    }
 }

@@ -13,14 +13,13 @@ public:
 
     void Update(float deltaTime) override
     {
-        m_speed = 2.5f * deltaTime;
+        m_speed = 0.05f * deltaTime;
 
         
     }
 
     void ProcessInput(GLFWwindow* window) override
     {
-
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
             m_Owner->GetPosition() += m_speed * m_cameraFront;
         if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
