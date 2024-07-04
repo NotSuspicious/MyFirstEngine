@@ -11,7 +11,11 @@ public:
 
     }
 
-    virtual ~Component() = default;
+    virtual ~Component()
+    {
+        //m_Owner->RemoveComponent(this);
+    }
+
     GameObject* GetOwner() const { return m_Owner; }
 
     virtual void Update(float deltaTime) = 0;

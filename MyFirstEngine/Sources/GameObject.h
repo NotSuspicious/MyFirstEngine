@@ -3,6 +3,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <vector>
 #include "Component.h"
+#include "Game.h"
 
 class GameObject
 {
@@ -23,9 +24,27 @@ public:
         m_Scale(glm::vec3(1.0f))
     { }
 
+    ~GameObject()
+    {
+        Game::Instance()->RemoveGameObject(this);
+        while (!m_Components.empty())
+        {
+            delete m_Components.back();
+        }
+    }
+
     void AddComponent(Component* const component) 
     {
         m_Components.push_back(component);
+    }
+
+    void RemoveComponent(Component* component)
+    {
+        auto iter = std::find(m_Components.begin(), m_Components.end(), component);
+        if (iter != m_Components.end())
+        {
+            m_Components.erase(iter);
+        }
     }
 
     glm::vec3& GetPosition() { return m_Position; }

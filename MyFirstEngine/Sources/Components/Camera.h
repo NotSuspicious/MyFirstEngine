@@ -8,14 +8,16 @@
 class Camera : public Component
 {
 public:
-    Camera(GameObject* owner) : Component(owner) {}
+    Camera(GameObject* owner, int width, int height) : Component(owner)
+    {
+        UpdateProjection(width, height);
+    }
     ~Camera() = default;
 
     void Update(float deltaTime) override
     {
-        m_speed = 0.05f * deltaTime;
-
-        
+        m_speed = 0.025f * deltaTime;
+        UpdateView();
     }
 
     void ProcessInput(GLFWwindow* window) override
@@ -29,6 +31,27 @@ public:
         if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
             m_Owner->GetPosition() += glm::normalize(glm::cross(m_cameraFront, m_cameraUp)) * m_speed;
     }
+
+    void UpdateView()
+    {
+        glm::vec3 direction;
+        float pitch = m_pitch;
+        float yaw = m_yaw;
+        direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+        direction.y = glm::sin(glm::radians(pitch));
+        direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+        m_cameraFront = glm::normalize(direction);
+
+        m_view = glm::lookAt(m_Owner->GetPosition(), m_Owner->GetPosition() + m_cameraFront, m_cameraUp);
+    }
+
+    void UpdateProjection(int width, int height)
+    {
+        m_projection = glm::perspective(glm::radians(m_fov), (float)width / (float)height, 0.1f, 100.0f);
+    }
+
+    glm::mat4 GetView() const { return m_view; }
+    glm::mat4 GetProjection() const { return m_projection; }
 
     void mouse_callback(GLFWwindow* window, double xoffset, double yoffset) {
         xoffset *= m_sensitivity;

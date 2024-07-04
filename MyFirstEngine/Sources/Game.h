@@ -101,6 +101,7 @@ private:
 
     void ProcessInput();
     void UpdateGame();
+    void DrawOutput();
 
     static Game* m_Instance;
 

@@ -42,7 +42,7 @@ bool Game::Initialize()
 
     //Create a camera gameobject
     m_CameraObj = new GameObject();
-    m_Camera = new Camera(m_CameraObj);
+    m_Camera = new Camera(m_CameraObj, mWidth, mHeight);
     m_CameraObj->AddComponent(m_Camera);
     AddGameObject(m_CameraObj);
 
@@ -91,7 +91,7 @@ bool Game::Initialize()
     int width1, height1, nChannels1;
     GLuint tex1 = GenerateTexture(williamImg, width1, height1, nChannels1);
     int width2, height2, nChannels2;
-    GLuint tex2 = GenerateTexture(faceImg, width2, height2, nChannels2);
+    GLuint tex2 = GenerateTexture(dogImg, width2, height2, nChannels2);
 
     //Get uniform reference from frag shader
     GLuint textureUni1 = glGetUniformLocation(shaderProgram, "m_Texture1");
@@ -112,65 +112,9 @@ void Game::Loop()
         m_isRunning = false;
     }
 
-
-
     ProcessInput();
     UpdateGame();
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Background Fill Color
-    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-
-
-    // view = glm::rotate(view, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-
-    glm::mat4 view;
-    glm::vec3 direction;
-    float pitch = m_Camera->m_pitch;
-    float yaw = m_Camera->m_yaw;
-    direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-    direction.y = glm::sin(glm::radians(pitch));
-    direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
-    m_Camera->m_cameraFront = glm::normalize(direction);
-
-    glm::vec3 pos = m_Camera->GetOwner()->GetPosition();
-    view = glm::lookAt(pos, pos + m_Camera->m_cameraFront, m_Camera->m_cameraUp);
-
-    glm::mat4 projection;
-    projection = glm::perspective(glm::radians(m_Camera->m_fov), (float)mWidth/(float)mHeight, 0.1f, 100.0f);
-    
-
-    // glm::mat4 view;
-    // view = CameraLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
-    // view = CameraTranslate(glm::vec3(camX, 0.0f, camZ));
-    
-    GLuint modelUni = glGetUniformLocation(shaderProgram, "model");
-    GLuint viewUni = glGetUniformLocation(shaderProgram, "view");
-    GLuint projectionUni = glGetUniformLocation(shaderProgram, "projection");
-    glUniformMatrix4fv(modelUni, 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(viewUni, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(projectionUni, 1, GL_FALSE, glm::value_ptr(projection));
-
-    
-
-    for (size_t i = 0 ; i < sizeof(cubePositions) ; i++) {
-        glm::mat4 world = glm::mat4(1.0f);
-        world = glm::translate(world, cubePositions[i]);
-        GLuint worldUni = glGetUniformLocation(shaderProgram, "world");
-        glUniformMatrix4fv(worldUni, 1, GL_FALSE, glm::value_ptr(world));
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
-
-    // glDrawElements(GL_TRIANGLES, sizeof(elements), GL_UNSIGNED_INT, 0);
-
-    // Flip Buffers and Draw
-    glfwSwapBuffers(m_Window);
-    glfwPollEvents();
+    DrawOutput();
 }
 
 void Game::Shutdown()
@@ -399,4 +343,37 @@ void Game::UpdateGame()
             delete gameObject;
         }
     }
+}
+
+void Game::DrawOutput()
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Background Fill Color
+    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::rotate(model, (float)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+    
+    GLuint modelUni = glGetUniformLocation(shaderProgram, "model");
+    GLuint viewUni = glGetUniformLocation(shaderProgram, "view");
+    GLuint projectionUni = glGetUniformLocation(shaderProgram, "projection");
+    glUniformMatrix4fv(modelUni, 1, GL_FALSE, glm::value_ptr(model));
+    glUniformMatrix4fv(viewUni, 1, GL_FALSE, glm::value_ptr(m_Camera->GetView()));
+    glUniformMatrix4fv(projectionUni, 1, GL_FALSE, glm::value_ptr(m_Camera->GetProjection()));
+
+    for (size_t i = 0 ; i < sizeof(cubePositions) ; i++) {
+        glm::mat4 world = glm::mat4(1.0f);
+        world = glm::translate(world, cubePositions[i]);
+        GLuint worldUni = glGetUniformLocation(shaderProgram, "world");
+        glUniformMatrix4fv(worldUni, 1, GL_FALSE, glm::value_ptr(world));
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+    }
+
+    // glDrawElements(GL_TRIANGLES, sizeof(elements), GL_UNSIGNED_INT, 0);
+
+    // Flip Buffers and Draw
+    glfwSwapBuffers(m_Window);
+    glfwPollEvents();
 }
