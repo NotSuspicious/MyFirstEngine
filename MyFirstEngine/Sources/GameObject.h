@@ -4,8 +4,6 @@
 #include <vector>
 #include "Component.h"
 
-#include "Game.h"
-
 class GameObject
 {
 public: 
@@ -53,14 +51,13 @@ private:
         }
     }
 
-    void ProcessInput() const
+    void ProcessInput(GLFWwindow* window) const
     {
         if (m_State != ACTIVE)
             return;
         for(Component* component : m_Components)
         {
-            Game* game = Game::Instance();
-            component->ProcessInput(game->GetWindow());
+            component->ProcessInput(window);
             OnProcessInput();
         }
     }

@@ -1,12 +1,11 @@
 #pragma once
 
-#include "Component.h"
 #include "GLFW/glfw3.h"
 #include "glm/fwd.hpp"
 #include <glad/glad.h>
 #include <vector>
 
-#include "GameObject.h"
+class GameObject;
 
 class Game
 {
@@ -87,7 +86,7 @@ public:
     void AddGameObject(GameObject* gameObject);
     void RemoveGameObject(GameObject* gameObject);
 
-    const static Game* Instance() { return m_Instance; }
+    static Game* Instance() { return m_Instance; }
 
     bool Initialize();
     void Loop();
@@ -115,6 +114,8 @@ private:
     void Mouse_Callback(GLFWwindow*, double xpos, double ypos);
     void Scroll_Callback(GLFWwindow*, double xoffset, double yoffset);
 
+    static void Mouse_Callback_Static(GLFWwindow*, double xpos, double ypos);
+    static void Scroll_Callback_Static(GLFWwindow*, double xoffset, double yoffset);
 public:
     bool IsRunning() { return m_isRunning; }
     GLFWwindow* GetWindow() const { return m_Window; }

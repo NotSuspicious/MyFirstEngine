@@ -9,6 +9,7 @@ class Camera : public Component
 {
 public:
     Camera(GameObject* owner) : Component(owner) {}
+    ~Camera() = default;
 
     void Update(float deltaTime) override
     {

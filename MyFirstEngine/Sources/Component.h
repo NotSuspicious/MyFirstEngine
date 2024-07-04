@@ -1,6 +1,5 @@
 #pragma once
 
-
 class GameObject;
 
 class Component
@@ -12,7 +11,7 @@ public:
 
     }
 
-    virtual ~Component();
+    virtual ~Component() = default;
     GameObject* GetOwner() const { return m_Owner; }
 
     virtual void Update(float deltaTime) = 0;

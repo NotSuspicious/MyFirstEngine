@@ -14,6 +14,8 @@
 #include "Game.h"
 #include "Component.h"
 
+Game* Game::m_Instance = nullptr;
+
 Game::Game()
     : m_isRunning(true)
 {
@@ -40,14 +42,14 @@ bool Game::Initialize()
 
     //Create a camera gameobject
     m_CameraObj = new GameObject();
-    Camera* CameraComp = new Camera(m_CameraObj);
-    m_CameraObj->AddComponent(CameraComp);
+    m_Camera = new Camera(m_CameraObj);
+    m_CameraObj->AddComponent(m_Camera);
     AddGameObject(m_CameraObj);
 
     glfwSetInputMode(m_Window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     
-    glfwSetCursorPosCallback(m_Window, this->Mouse_Callback);
-    glfwSetScrollCallback(m_Window, this->Scroll_Callback);
+    glfwSetCursorPosCallback(m_Window, Mouse_Callback_Static);
+    glfwSetScrollCallback(m_Window, Scroll_Callback_Static);
 
     //Vertex Array Object VAO: Stores attributes and VBO links
     GLuint vao;
@@ -352,6 +354,16 @@ void Game::Mouse_Callback(GLFWwindow* window, double xpos, double ypos)
 void Game::Scroll_Callback(GLFWwindow*, double xoffset, double yoffset)
 {
     m_Camera->scroll_callback(m_Window, xoffset, yoffset);
+}
+
+void Game::Mouse_Callback_Static(GLFWwindow* window, double xpos, double ypos)
+{
+    Game::Instance()->Mouse_Callback(window, xpos, ypos);
+}
+
+void Game::Scroll_Callback_Static(GLFWwindow* window, double xpos, double ypos)
+{
+    Game::Instance()->Scroll_Callback(window, xpos, ypos);
 }
 
 void Game::ProcessInput()
